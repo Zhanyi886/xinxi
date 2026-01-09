@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五子棋游戏</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0e68c;
+        }
+
+        #board {
+
+            border: 2px solid # 08b4513;
+            background-color: #d2b48c;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: # 04caf50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: # 045a049;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="board" width="600" height="600"></canvas>
+    <div>
+        <button id="startGame">开始游戏</button>
+        <button id="restartGame">重新开始</button>
+    </div>
+    <script>
+        const canvas = document.getElementById('board');
+        const ctx = canvas.getContext('2d');
+        const gridSize = 30;
+        const boardSize = 15;
+        const pieceRadius = 13;
+        let board = [];
+        let isGameOver = false;
+        let isPlayerTurn = true;
+
+        function initBoard() {
+            board = Array.from({ length: boardSize }, () => Array(boardSize).fill(0));
+            isGameOver = false;
+            isPlayerTurn = true;
+        }
+
+        function drawBoard() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < boardSize; i++) {
+                ctx.beginPath();
+                ctx.moveTo(gridSize, gridSize + i * gridSize);
+                ctx.lineTo(canvas.width - gridSize, gridSize + i * gridSize);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(gridSize + i * gridSize, gridSize);
+                ctx.lineTo(gridSize + i * gridSize, canvas.height - gridSize);
+                ctx.stroke();
+            }
+            for (let i = 0; i < boardSize; i++) {
+                for (let j = 0; j < boardSize; j++) {
+                    if (board[i][j] === 1) {
+                        drawPiece(i, j, 'black');
+                    } else if (board[i][j] === 2) {
+                        drawPiece(i, j, 'white');
+                    }
+                }
+            }
+        }
+
+        function drawPiece(x, y, color) {
+            const centerX = gridSize + x * gridSize;
+            const centerY = gridSize + y * gridSize;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, pieceRadius, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+
+        function checkWin(x, y, player) {
+            const directions = [
+                [[1, 0], [-1, 0]],
+                [[0, 1], [0, -1]],
+                [[1, 1], [-1, -1]],
+                [[1, -1], [-1, 1]]
+            ];
+            for (const dir of directions) {
+                let count = 1;
+                for (const [dx, dy] of dir) {
+                    let nx = x + dx;
+                    let ny = y + dy;
+                    while (nx >= 0 && nx < boardSize && ny >= 0 && ny < boardSize && board[nx][ny] === player) {
+                        count++;
+                        nx += dx;
+                        ny += dy;
+                    }
+                }
+                if (count >= 5) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function aiMove() {
+            let bestScore = -Infinity;
+            let bestX, bestY;
+            for (let i = 0; i < boardSize; i++) {
+                for (let j = 0; j < boardSize; j++) {
+                    if (board[i][j] === 0) {
+                        board[i][j] = 2;
+                        const score = evaluateBoard();
+                        board[i][j] = 0;
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestX = i;
+                            bestY = j;
+                        }
+                    }
+                }
+            }
+            board[bestX][bestY] = 2;
+            drawPiece(bestX, bestY, 'white');
+            if (checkWin(bestX, bestY, 2)) {
+                alert('电脑获胜!');
+                isGameOver = true;
+            } else {
+                isPlayerTurn = true;
+            }
+        }
+
+        function evaluateBoard() {
+            // 简单评估函数，可根据需求优化
+            return Math.random();
+        }
+
+        canvas.addEventListener('click', function (e) {
+            if (isGameOver || !isPlayerTurn) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.round((e.clientX - rect.left - gridSize) / gridSize);
+            const y = Math.round((e.clientY - rect.top - gridSize) / gridSize);
+            if (x >= 0 && x < boardSize && y >= 0 && y < boardSize && board[x][y] === 0) {
+                board[x][y] = 1;
+                drawPiece(x, y, 'black');
+                if (checkWin(x, y, 1)) {
+                    alert('你获胜!');
+                    isGameOver = true;
+                } else {
+                    isPlayerTurn = false;
+                    aiMove();
+                }
+            }
+        });
+
+        document.getElementById('startGame').addEventListener('click', function () {
+            initBoard();
+            drawBoard();
+        });
+
+        document.getElementById('restartGame').addEventListener('click', function () {
+            initBoard();
+            drawBoard();
+        });
+
+        // 初始化
+        initBoard();
+        drawBoard();
+    </script>
+</body>
+
+</html>
